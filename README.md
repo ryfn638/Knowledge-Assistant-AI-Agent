@@ -5,7 +5,6 @@ Currently this has some university subject pdfs attached but feel free to attach
 
 ## For personal usage
 - This does use Gemini-2.5-Flash, so you will need to create a file .env which contains your key in the format: GOOGLE_API_KEY=yourkeyhere
-- For installation of the newest version of OpenOnion
 
 ## Learn More about OpenOnion
 
