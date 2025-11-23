@@ -12,13 +12,15 @@ If you want to use this agent you will need to provide your own Google Gemini AP
 GOOGLE_API_KEY=yourapikeyhere
 
 If you want to change the model to use your paid GPT-5 API key, then in agent.py replace the `model = "gemini-2.5-flash"` with whatever model you want to use as shown.
-`agent = Agent(
+
+```python
+agent = Agent(
     name="knowledge-assistant", 
     system_prompt=Path(__file__).parent / "prompt.md", # you can also pass a markdown file like system_prompt="path/to/your_markdown_file.md"
     tools=pdf_tools, # tools can be python classes or functions
     model="YOURMODELNAMEHERE",
     api_key=None  # Will read from GOOGLE_API_KEY environment variable or .env file
-)`
+)```
 
  Similarly in pdf_automation you will also have to do this with applications of `llm_do()`
  there will be a `model = gemini-2.5-flash` which you can replace with your own LLM API key.
