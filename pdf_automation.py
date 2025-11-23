@@ -1,6 +1,12 @@
 import PyPDF2
 from connectonion import xray, llm_do
 import search_strategy
+from pydantic import BaseModel
+
+class QuizContent(BaseModel):
+    """Model for quiz output with separate questions and answers HTML."""
+    questions: str
+    answers: str
 
 class PDFAutomation:
     """
@@ -18,8 +24,8 @@ class PDFAutomation:
         self.page = None;
 
         self.question = question;
-
         self.keywords = None;
+        self.relevantPages = [];
 
     def get_page(self) -> str:
         """
@@ -106,6 +112,9 @@ class PDFAutomation:
             return f"Invalid page number. Document has {len(self.pdf_reader.pages)} pages (0-{len(self.pdf_reader.pages)-1})"
         self.current_page = page_number
         self.page = self.pdf_reader.pages[self.current_page]
+
+        self.relevantPages = [self.current_page]
+
         return f"Jumped to page {self.current_page}"
 
     def get_total_pages(self) -> int:
@@ -128,6 +137,8 @@ class PDFAutomation:
             text = page.extract_text()
             text_parts.append(f"--- Page {page_num} ---\n{text}\n")
         
+        ## update relevantPages if a html is going to be made
+        self.relevantPages = [page_num for page_num in range(start_page, end_page+1)]
         return "\n".join(text_parts)
 
     def search_entire_document(self) -> str:
@@ -152,15 +163,8 @@ class PDFAutomation:
             page_text = page.extract_text()
             
             # Check if multiple keywords are present (better signal, reduces false positives)
-
-            ## Improvements:
-            # A keyword match in a title > Keyword match in a paragraph, consider the structure of where the keyword occurs,
-            # is it a Title? if so thats worth at least 3 keywords. 2 mentions in a paragraph > 1 mention as a title, even though realistically if its a title should have at least 2 mentions
-            # Keyword Diversity is also important,
-            # If a biology document with 100s of animals was shown then the question: Where do frogs live
-            # The live Keyword will appear 100s of times, so maybe its not diversity but rather filtering out keywords that appear too much in the doc
             keyword_matches = sum(1 for kw in self.keywords if kw.lower() in page_text.lower())
-            if keyword_matches >= 2:  # Require at least 2 keyword matches
+            if keyword_matches >= 2:  # Require at least 2 unique keyword matches
                 candidate_pages.append((page_num, page_text, keyword_matches))
         
         if not candidate_pages:
@@ -187,16 +191,19 @@ class PDFAutomation:
                 page_numbers.append(page_num)
             
             # Single API call for the entire batch (5 pages at once!)
-            result = llm_do(f"""Search the following pages for an answer to the question: {self.question}
+            result = llm_do(f"""
+            Search the following pages for an answer to the question: {self.question}
 
-Pages to search:
-{batch_text}
+            Pages to search:
+            {batch_text}
 
-If you find a satisfactory answer, provide it. If the answer is unsatisfactory or lacking enough context, return:
-answer="No answer found on these pages", reason="Insufficient information"
-""", output=search_strategy.SearchStrategy, model="gemini-2.5-flash")
+            If you find a satisfactory answer, provide it. If the answer is unsatisfactory or lacking enough context, return:
+            answer="No answer found on these pages", reason="Insufficient information"
+            """, 
+            output=search_strategy.SearchStrategy, model="gemini-2.5-flash")
             
             if result.answer != "No answer found on these pages" and result.answer != "No answer found on the page":
+                self.relevantPages = page_numbers # Save the Relevant Pages
                 answers.append(f"Found in pages {page_numbers}: {result.answer}")
                 # Early stopping - found a good answer!
                 break
@@ -217,7 +224,110 @@ answer="No answer found on these pages", reason="Insufficient information"
         """
         return self.current_page
 
-    ## STUFF TO DO
-    # Add
+
+    def createNotes(self) -> str:
+        """
+            If the user requests notes, create notes in the format of a html using the pages identified as relevant in search_entire_document()
+            Ensure the search_entire_document has run before this.
+
+            save the resulting notes in notes.html
+        """
+
+        if len(self.relevantPages) == 0:
+            return "No relevant pages in the pdf to form notes, run search_entire_document()"
+
+        # Extract text from relevant pages
+        pages_text = ""
+        for page_num in self.relevantPages:
+            page = self.pdf_reader.pages[page_num]
+            page_text = page.extract_text()
+            pages_text += f"\n\n--- Page {page_num} ---\n{page_text}"
+        
+        # Generate HTML notes using LLM
+        html_content = llm_do(f"""
+            Based on the question: {self.question}
+            
+            Create comprehensive study notes in HTML format from the following pages:
+            {pages_text}
+            
+            Format the notes as a complete, well-structured HTML document with:
+            - Proper HTML structure (html, head, body tags)
+            - Title and headings
+            - Organized sections
+            - Good formatting and styling
+            - Return ONLY the HTML code, nothing else
+            """, 
+            model="gemini-2.5-flash")
+        
+        # Save HTML string to notes.html file
+        with open('extras/notes.html', 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        
+        return f"Notes successfully saved to notes.html using pages {self.relevantPages}"
+
+    def quizNotes(self) -> str:
+        """
+        If the user requests a quiz, create quiz and store the result and an answer sheet inside of a html file.
+        Ensure that either: search_entire_document() or extract_text_range() or jump_to_page() has been run prior to this
+        """
+
+        if len(self.relevantPages) == 0:
+            return "No relevant pages in the pdf to form notes, run search_entire_document()"
+
+        # Extract text from relevant pages
+        pages_text = ""
+        for page_num in self.relevantPages:
+            page = self.pdf_reader.pages[page_num]
+            page_text = page.extract_text()
+            pages_text += f"\n\n--- Page {page_num} ---\n{page_text}"
+
+        # Generate quiz HTML using LLM with structured output
+        quiz_content = llm_do(f"""
+            Based on the query: {self.question}
+            
+            Create a comprehensive multiple choice quiz in HTML format using the following page text as a reference:
+            {pages_text}
+            
+            You must return two separate HTML documents:
+            1. questions: A complete, well-structured HTML document containing the quiz questions with:
+               - Proper HTML structure (html, head, body tags)
+               - Title and headings
+               - Multiple choice questions with options (A, B, C, D, etc.)
+               - Good formatting and styling
+               - Do NOT include the answers in this document
+            
+            2. answers: A complete, well-structured HTML document containing the answer key with:
+               - Proper HTML structure (html, head, body tags)
+               - Title and headings
+               - Clear answer key showing which option is correct for each question
+               - Good formatting and styling
+            """, 
+            model="gemini-2.5-flash",
+            output=QuizContent)
+
+        # Save HTML strings to separate files
+        with open('extras/quiz.html', 'w', encoding='utf-8') as f:
+            f.write(quiz_content.questions)
+        
+        with open('extras/answers.html', 'w', encoding='utf-8') as f:
+            f.write(quiz_content.answers)
+        
+        return f"Quiz successfully saved to extras/quiz.html and extras/answers.html using pages {self.relevantPages}"
+
+
+    def clearKeywords(self):
+        """
+        If a user asks a question that is unrelated to the previous question for instance:
+        The user asks a question about frogs and then asks a question about cows, then run this code
+        This just clears the existing keywords
+        """
+
+        self.relevantPages = []
+        self.keywords = None
+
+
+
+
+
 
 

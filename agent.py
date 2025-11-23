@@ -8,21 +8,10 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-def calculator(expression: str) -> float:
-    """Simple calculator that evaluates arithmetic expressions.
-
-    Args:
-        expression: A mathematical expression (e.g., "5*5", "10+20")
-
-    Returns:
-        The result of the calculation
-    """
-    # Note: eval() is used for simplicity. For production, use a safer parser.
-    return eval(expression)
-
 # Sample pdf which has all of the subject matter for uni subject, this should be a good test case
-pdf_path = Path(__file__).parent / "CAB202LectureNotes.pdf"
+pdf_path = Path(__file__).parent / "pdfs" / "CAB202LectureNotes.pdf"
 
+print(f"Type exit as an input to close the program")
 question = input(f"Ask question revolving around the document\n")
 pdf_tools = PDFAutomation(pdf_path, question)
 
@@ -36,9 +25,13 @@ agent = Agent(
 )
 
 
-
-# Run the agent
+# Run the agent, maybe could attach this to a web server and just compute with AWS and would be sick to expand upon this more
+# Make like a full on study app with quizzes and whatnot, but thats for another time.
 if __name__ == "__main__":
-    result = agent.input(f"Answer the question : {question}")
+    while (question != "Exit"):
+        result = agent.input(f"Answer the question : {question}")
+        
+        print(result)
+        question = input(f"Ask question revolving around the document\n")
 
-    print(result)
+    print("Thanks for using the Study Agent")

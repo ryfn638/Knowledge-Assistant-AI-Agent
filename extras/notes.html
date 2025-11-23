@@ -1,0 +1,120 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRAM Study Notes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: #0056b3;
+            border-bottom: 2px solid #0056b3;
+            padding-bottom: 5px;
+            margin-top: 25px;
+        }
+        h1 {
+            text-align: center;
+            border-bottom: 3px solid #0056b3;
+            padding-bottom: 10px;
+        }
+        ul {
+            list-style-type: disc;
+            margin-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        strong {
+            color: #000;
+        }
+        .note {
+            background-color: #e0f7fa;
+            border-left: 5px solid #007bb5;
+            padding: 10px 15px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>SRAM Study Notes</h1>
+
+    <section>
+        <h2>1. Introduction and Core Characteristics</h2>
+        <ul>
+            <li><strong>Volatile Memory:</strong> Memory contents are lost when power is removed.</li>
+            <li><strong>Cost:</strong> Generally more expensive than Flash memory.</li>
+            <li><strong>Speed:</strong> Significantly faster than Flash memory.</li>
+            <li><strong>Purpose:</strong> Primarily used to store variables and temporary data during program execution.</li>
+            <li><strong>Access Granularity:</strong> Allows access to individual bytes, meaning large chunk erasures are not required.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>2. SRAM in the AVR ATtiny1626 Microcontroller</h2>
+        <p>The ATtiny1626 microcontroller, as a key feature, includes SRAM for data storage:</p>
+        <ul>
+            <li><strong>Capacity:</strong>
+                <ul>
+                    <li>The microcontroller features a <strong>2KB SRAM</strong>, specifically mentioned for storing data in memory.</li>
+                    <li><em>Note:</em> The ATtiny1626 memory map (Figure 28) indicates a <strong>3KB SRAM</strong> block. This suggests there might be different configurations or a slightly larger usable space than the general feature description.</li>
+                </ul>
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>3. Memory Access and Architecture</h2>
+        <h3>3.1 Memory-Mapped I/O (MMIO)</h3>
+        <ul>
+            <li>On the AVR Core, both I/O and SRAM are accessed through the <strong>data space</strong>.</li>
+            <li>This means SRAM can be directly accessed using standard instructions for reading and writing to memory.</li>
+            <li>This approach simplifies the design of the AVR Core and reduces overall chip complexity.</li>
+        </ul>
+
+        <h3>3.2 SRAM Address Range (ATtiny1626)</h3>
+        <ul>
+            <li>According to the ATtiny1626 memory map, SRAM is located in the data space from address <strong>0x0040 to 0x107F</strong>.</li>
+        </ul>
+
+        <h3>3.3 Instructions for Memory Access</h3>
+        <p>The following instructions are used to access memory within the data space, which includes SRAM:</p>
+        <ul>
+            <li><strong><code>lds</code></strong> (Load Direct from Data Space to Register)</li>
+            <li><strong><code>sts</code></strong> (Store Direct from Register to Data Space)</li>
+            <li><strong><code>ld</code></strong> (Load Indirect from Data Space to Register) - Suitable for accessing data structures like arrays using pointer registers (X, Y, Z).</li>
+            <li><strong><code>st</code></strong> (Store Indirect from Register to Data Space) - Also uses pointer registers for data structure manipulation.</li>
+            <li><strong><code>push</code> / <code>pop</code></strong>: These are stack operations that occur in SRAM.
+                <ul>
+                    <li>Stack operations using <code>push</code>/<code>pop</code> are noted to start at address <strong>0x3800</strong> within SRAM.</li>
+                    <li><em>Note:</em> This address (0x3800) falls within a "Reserved" block (0x3400-0x3FFF) in the general ATtiny1626 data space map, suggesting that this reserved space is utilized for the stack.</li>
+                </ul>
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>4. Comparison with Flash Memory</h2>
+        <ul>
+            <li><strong>Speed:</strong> SRAM is significantly faster.</li>
+            <li><strong>Volatility:</strong> SRAM is volatile (lost on power loss), while Flash is non-volatile (retains data without power).</li>
+            <li><strong>Cost:</strong> SRAM is more expensive per bit.</li>
+            <li><strong>Usage:</strong> SRAM is for dynamic, temporary data (variables), whereas Flash is for static program data and can only be erased in large chunks.</li>
+        </ul>
+    </section>
+
+</body>
+</html>
+```
