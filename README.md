@@ -42,11 +42,13 @@ agent = Agent(
  ---
  
  ## Samples of Quizzes and Notes
+<div text-align=center>
+    
+ <img width="50%" height="936" alt="image" src="https://github.com/user-attachments/assets/b5aaf63a-4816-472a-9e5a-cec4a3f05bf6" text-align=left />
 
- <img width="924" height="936" alt="image" src="https://github.com/user-attachments/assets/b5aaf63a-4816-472a-9e5a-cec4a3f05bf6" />
+<img width="50%" height="925" alt="image" src="https://github.com/user-attachments/assets/361daaea-2716-4896-88a9-adc35126728b" text-align=right/>
 
-<img width="930" height="925" alt="image" src="https://github.com/user-attachments/assets/361daaea-2716-4896-88a9-adc35126728b" />
-
+</div>
  
 
  
