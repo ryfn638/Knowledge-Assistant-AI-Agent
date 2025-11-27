@@ -1,5 +1,5 @@
 # Knowledge Assistant Study AI Agent
-Simple pdf analysis AI agent that can answer basic queries about pdf documents that uses OpenOnion
+Simple pdf analysis AI agent that can answer basic queries about pdf documents that uses OpenOnion.
 This works best with pdf files that are completely text and dont contain scanned images as content.
 
 Alongside PDF documents, Websites can also be fed into the agent.
