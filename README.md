@@ -7,11 +7,15 @@ There is currently no YouTube API key attached, however you may attach your own 
 
 To exit the process simply type "Exit" as an input and it will exit the loop
 
+---
+
 ## Some other features
 - If you request it to it can create notes on specific tasks which are stored in extras/notes.html
 - Similarly it can create multiple choice quizzes with an answer sheet included separately which are also stored in the extras folders
 
 ---
+
+## Personal Usage
 
 If you want to use this agent you will need to provide your own Google Gemini API key via the inclusion of a .env folder which has the following structure
 GOOGLE_API_KEY=yourapikeyhere
@@ -34,3 +38,15 @@ agent = Agent(
  there will be a `model = gemini-2.5-flash` which you can replace with your own LLM API key.
 
  For more information on your specific LLM refer to OpenOnion Documentation
+
+ ---
+ 
+ ## Samples of Quizzes and Notes
+
+ <img width="924" height="936" alt="image" src="https://github.com/user-attachments/assets/b5aaf63a-4816-472a-9e5a-cec4a3f05bf6" />
+
+<img width="930" height="925" alt="image" src="https://github.com/user-attachments/assets/361daaea-2716-4896-88a9-adc35126728b" />
+
+ 
+
+ 
