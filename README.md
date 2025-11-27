@@ -41,7 +41,7 @@ agent = Agent(
 
  ---
  
- # Samples of Quizzes and Notes
+<h1 align=center> Sample of Documents</h1>
 
  Quiz Sample | Notes Sample
  :----------:|:-------------------:
