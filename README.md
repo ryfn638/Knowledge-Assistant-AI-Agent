@@ -42,7 +42,7 @@ agent = Agent(
  ---
  
  ## Samples of Quizzes and Notes
-<div align=center">
+<div align=center>
     
  <img width="50%" height="936" alt="image" src="https://github.com/user-attachments/assets/b5aaf63a-4816-472a-9e5a-cec4a3f05bf6" align=left />
 
