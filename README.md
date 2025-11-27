@@ -2,6 +2,11 @@
 Simple pdf analysis AI agent that can answer basic queries about pdf documents that uses OpenOnion
 This works best with pdf files that are completely text and dont contain scanned images as content.
 
+Alongside PDF documents, Websites can also be fed into the agent.
+There is currently no YouTube API key attached, however you may attach your own if you want it to analyse YouTube videos to respond to your query
+
+To exit the process simply type "Exit" as an input and it will exit the loop
+
 ## Some other features
 - If you request it to it can create notes on specific tasks which are stored in extras/notes.html
 - Similarly it can create multiple choice quizzes with an answer sheet included separately which are also stored in the extras folders
