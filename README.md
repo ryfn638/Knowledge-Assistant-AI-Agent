@@ -41,7 +41,7 @@ agent = Agent(
 
  ---
  
- ## Samples of Quizzes and Notes
+ # Samples of Quizzes and Notes
 
  Quiz Sample | Notes Sample
  :----------:|:-------------------:
