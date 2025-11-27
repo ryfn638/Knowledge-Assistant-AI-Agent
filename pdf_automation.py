@@ -2,6 +2,7 @@ import PyPDF2
 from connectonion import xray, llm_do
 import search_strategy
 from pydantic import BaseModel
+from utils import generate_keywords
 
 class QuizContent(BaseModel):
     """Model for quiz output with separate questions and answers HTML."""
@@ -16,27 +17,54 @@ class PDFAutomation:
         - If not sufficient then traverse to the next page
         - flip the page in the opposite direction if needed
         - Generating keywords based off the question
+
+        Use tools from this function should the user provide a pdf and NOT a link to a website
     """
 
-    def __init__(self, pdf_path: str, question : str):
-        self.pdf_reader = PyPDF2.PdfReader(pdf_path)
+    def __init__(self):
+        self.pdf_reader = None;
         self.current_page = 0;
         self.page = None;
 
-        self.question = question;
+        self.question = None;
         self.keywords = None;
         self.relevantPages = [];
 
+    def ask_pdf_question(self) -> str:
+        """
+        Tool: Prompt the user for a question about the PDF document.
+        """
+        self.question = input(f"Ask question revolving around the document\n");
+        if (self.question.lower() == "exit"):
+            return "return Exit"
+        else :
+            return self.question
+
+    def load_pdf(self, pdf_path: str = None) -> str:
+        """
+        Tool: Load a PDF document from a file path. If no path is provided, prompts the user.
+        """
+        if not pdf_path:
+            pdf_path = input(f"Please provide a valid pdf filepath: ")
+
+        try:
+            self.pdf_reader = PyPDF2.PdfReader(pdf_path)
+            self.current_page = 0
+            return "PDF successfully loaded"
+        except Exception as e:
+            return f"Invalid PDF filepath: {e}"
+
+
     def get_page(self) -> str:
         """
-        Get the Current page
+        Tool: Load the current page from the PDF into memory.
         """
         self.page = self.pdf_reader.pages[self.current_page]
         return f"Loaded page {self.current_page}"
 
     def flip_page(self) -> str:
         """
-        Traverse to the next page and assign self.page to the new page
+        Tool: Move to the next page in the PDF document.
         """
         if self.current_page < len(self.pdf_reader.pages) - 1:
             self.current_page += 1
@@ -47,7 +75,7 @@ class PDFAutomation:
 
     def reverse_flip_page(self) -> str:
         """
-        Traverse to the previous page and assign self.page to the new page
+        Tool: Move to the previous page in the PDF document.
         """
         if self.current_page > 0:
             self.current_page -= 1
@@ -58,39 +86,23 @@ class PDFAutomation:
 
     def get_text(self) -> str:
         """
-        Get the text of the current page
+        Tool: Extract all text content from the currently loaded page.
         """
         if not self.page:
             return "No page loaded. Call get_page() first."
         return self.page.extract_text()
 
-    def generate_keywords(self) -> str:
+    def generate_pdf_keywords(self) -> str:
         """
-        Generate keywords based on the question
+        Tool: Generate search keywords from the user's question for PDF scanning.
         """
-        # Get keywords as a comma-separated string (Gemini doesn't support structured output for lists)
-        keywords_str = llm_do(f"""
-        Generate keywords based on the question: {self.question}.
-        These Keywords do not have to specifically be in the question.
-        For example if the question was: "Where do rabbits live", keywords can include: habitat, live, environment.
-        Essentially common words that relate to the main question that you would expect to see in a pdf document addressing them.
-        
-        Return ONLY a comma-separated list of keywords, nothing else. For example: "habitat, live, environment, rabbits, dwelling"
-        """, model="gemini-2.5-flash")
-
-        # Parse the comma-separated string into a list
-        if keywords_str:
-            # Split by comma, strip whitespace, and filter out empty strings
-            self.keywords = [kw.strip() for kw in keywords_str.split(',') if kw.strip()]
-        else:
-            self.keywords = []
+        self.keywords = generate_keywords(self.question)
 
         return f"Generated keywords: {', '.join(self.keywords) if self.keywords else 'None'}"
 
     def scan_page(self) -> str:
         """
-        This is the main function that will be called to scan the page for the answer.
-        This uses the search_page function in the search_strategy file
+        Tool: Search the current page for an answer to the user's question using keywords.
         """
         if not self.page:
             return "Page doesn't exist. Call get_page() first."
@@ -106,7 +118,7 @@ class PDFAutomation:
 
     def jump_to_page(self, page_number: int) -> str:
         """
-        Jump to a specific page number (0-indexed).
+        Tool: Jump directly to a specific page number (0-indexed) in the PDF.
         """
         if page_number < 0 or page_number >= len(self.pdf_reader.pages):
             return f"Invalid page number. Document has {len(self.pdf_reader.pages)} pages (0-{len(self.pdf_reader.pages)-1})"
@@ -119,14 +131,14 @@ class PDFAutomation:
 
     def get_total_pages(self) -> int:
         """
-        Get the total number of pages in the PDF.
+        Tool: Get the total number of pages in the loaded PDF document.
         """
         return len(self.pdf_reader.pages)
 
     def extract_text_range(self, start_page: int, end_page: int) -> str:
         """
-        Extract text from a range of pages (inclusive).
-        Returns concatenated text from all pages in the range.
+        Tool: Extract and concatenate text from a range of pages (inclusive).
+        Updates relevantPages for use in notes/quiz generation.
         """
         if start_page < 0 or end_page >= len(self.pdf_reader.pages) or start_page > end_page:
             return f"Invalid page range. Document has {len(self.pdf_reader.pages)} pages (0-{len(self.pdf_reader.pages)-1})"
@@ -143,8 +155,8 @@ class PDFAutomation:
 
     def search_entire_document(self) -> str:
         """
-        Search the entire document for the answer by scanning all pages.
-        Optimized to reduce API calls: batches pages together and requires multiple keyword matches.
+        Tool: Search the entire PDF for an answer by scanning all pages efficiently.
+        Optimized to reduce API calls by batching pages and requiring multiple keyword matches.
         """
         if not self.keywords:
             return "No keywords generated. Call generate_keywords() first."
@@ -220,17 +232,16 @@ class PDFAutomation:
 
     def get_page_number(self) -> int:
         """
-        Get the current page number (0-indexed).
+        Tool: Get the current page number (0-indexed) in the PDF.
         """
         return self.current_page
 
 
     def createNotes(self) -> str:
         """
-            If the user requests notes, create notes in the format of a html using the pages identified as relevant in search_entire_document()
-            Ensure the search_entire_document has run before this.
-
-            save the resulting notes in notes.html
+        Tool: Generate comprehensive HTML study notes from relevant PDF pages.
+        Requires search_entire_document() or extract_text_range() to have run first.
+        Saves notes to extras/notes.html.
         """
 
         if len(self.relevantPages) == 0:
@@ -267,8 +278,9 @@ class PDFAutomation:
 
     def quizNotes(self) -> str:
         """
-        If the user requests a quiz, create quiz and store the result and an answer sheet inside of a html file.
-        Ensure that either: search_entire_document() or extract_text_range() or jump_to_page() has been run prior to this
+        Tool: Generate a multiple-choice quiz and answer key from relevant PDF pages.
+        Requires search_entire_document(), extract_text_range(), or jump_to_page() to have run first.
+        Saves quiz to extras/quiz.html and answers to extras/answers.html.
         """
 
         if len(self.relevantPages) == 0:
@@ -285,8 +297,8 @@ class PDFAutomation:
         quiz_content = llm_do(f"""
             Based on the query: {self.question}
             
-            Create a comprehensive multiple choice quiz in HTML format using the following page text as a reference:
-            {pages_text}
+            Create a comprehensive quiz in HTML format using the following page text as a reference:
+            {pages_text}. Assume that the quiz is multiple choice UNLESS specified otherwise.
             
             You must return two separate HTML documents:
             1. questions: A complete, well-structured HTML document containing the quiz questions with:
@@ -315,15 +327,14 @@ class PDFAutomation:
         return f"Quiz successfully saved to extras/quiz.html and extras/answers.html using pages {self.relevantPages}"
 
 
-    def clearKeywords(self):
+    def clearKeywords(self) -> str:
         """
-        If a user asks a question that is unrelated to the previous question for instance:
-        The user asks a question about frogs and then asks a question about cows, then run this code
-        This just clears the existing keywords
+        Tool: Clear cached keywords and relevant pages when switching to a new topic.
+        Use when the user asks an unrelated question to reset the search state.
         """
-
         self.relevantPages = []
         self.keywords = None
+        return "Keywords and relevant pages cleared"
 
 
 
